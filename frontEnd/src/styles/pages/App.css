@@ -1,24 +1,18 @@
-body, html, #root {
-  margin: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
 .app-container {
   display: flex;
   height: 100vh;
-  width: 100vw;
+  overflow-y: auto;
   flex-direction: column;
   align-items: flex-end; 
   box-sizing: border-box;
-  overflow-y: auto; 
-  overflow-x: hidden;
-  background-size: cover;
-  background-position: center;
-  background-image: url('https://oldschoolgrappling.com/wp-content/uploads/2018/08/Background-opera-speeddials-community-web-simple-backgrounds.jpg');
-  transition: background-image 0.1s ease-in-out;
+  background-color: white;
   scroll-behavior: smooth;
   z-index: 1; 
+  touch-action: pan-y; 
+  overflow-x: hidden; 
+  background-image: url('https://oldschoolgrappling.com/wp-content/uploads/2018/08/Background-opera-speeddials-community-web-simple-backgrounds.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
 .app-container::-webkit-scrollbar {
@@ -37,7 +31,7 @@ body, html, #root {
 .search-bar {
   width: 100%;
   height: 100%;
-  padding: 15px 15px 15px 15px;
+  padding: 15px;
   border: 2px solid transparent;
   border-radius: 10px;
   transition: opacity 0.5s, background-color 0.9s, box-shadow 0.5s;
@@ -46,8 +40,9 @@ body, html, #root {
   pointer-events: auto;
   color: white;
   background-color: rgba(47, 47, 48, 0.578);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
   user-select: none;
-  font-size: clamp(16px, 2vw, 18px);
 }
 
 .search-bar::placeholder {
@@ -73,17 +68,13 @@ body, html, #root {
   75% { border-color: #567dff; }
 }
 
-
-
 .right-aligned-list {
   list-style: none;
   padding-top: clamp(120px, 20vh, 150px);
-  padding-bottom: clamp(50px, 20vh, 300px);
+  padding-bottom: clamp(100px, 25vh, 300px);
   z-index: 2; 
-  display: flex; 
   flex-direction: column; 
   align-items: flex-end;
-  width: 45%;
 }
 /* Update the client wrapper */
 .client-wrapper {
@@ -91,7 +82,7 @@ body, html, #root {
   max-width: 100%;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box; /* Include padding/borders in width */
+  box-sizing: border-box; 
 }
 
 .no-jobs-message {

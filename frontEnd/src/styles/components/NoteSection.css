@@ -1,0 +1,107 @@
+.notes-section {
+  position: absolute;
+  top: 200px;
+  left: 4vw;
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  z-index: 10;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.note-card { 
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  width: clamp(200px, 18vw, 220px);
+  height: auto;
+  background: #b1b1b12c;
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-self: flex-start;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 1;
+  transform: translateY(0);
+  transition: 
+    opacity 0.25s cubic-bezier(.4,0,.2,1),
+    transform 0.25s cubic-bezier(.4,0,.2,1);
+}
+
+.note-card.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  border-radius: 6px 6px 0 0;
+  user-select: none;
+}
+
+.note-header span i {
+  margin-right: 6px;
+}
+
+.note-card.property .note-header {
+  background: #c2433c;
+}
+
+.note-card.schedule .note-header {
+  background: #a44bd8;
+}
+
+.note-edit-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 0.7em;
+}
+
+.note-edit-btn:hover {
+  opacity: 0.8;
+}
+
+.note-content {
+  padding: 6px 0.75rem;
+  flex-grow: 1;
+  font-family: "Outfit", sans-serif;
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  color: #333;
+}
+
+.note-content h1 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.3rem 0;
+  color: #333;
+}
+v
+.note-content p {
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: #555;            
+  margin: 0;
+  line-height: 1.4;
+}
+
+@media (max-width: 850px) {
+  .notes-section {
+    flex-direction: column;
+    top: 180px;
+    left: 7vw;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .note-card {
+    width: clamp(150px, 40vw, 200px);
+  }
+  
+}

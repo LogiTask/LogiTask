@@ -6,7 +6,8 @@ import "../styles/pages/PropertyView.css";
 import ConfirmationDialog  from "../components/Dialog/ConfirmationDialog";
 import AddSchedule from "../components/Property/AddSchedule";
 import SelectButtons from "../components/Dialog/SelectButtons";
-import { formatDateLocal, formatDayOfTheWeek, daysUntilNextJob, getTodayInUserTimezone, formatCurrency } from "../utils/format";
+import { formatDateLocal, formatDayOfTheWeek, daysUntilNextJob, getTodayInUserTimezone, formatCurrency, formatPhoneNumber } from "../utils/format";
+import { toGoogleMapsLink } from "../utils/googleMapsLink";
 
 const PropertyView: React.FC = () => {
   const location = useLocation();
@@ -296,52 +297,49 @@ const handleNextDateConfirm = async() => {
       {/* Property Header */}
       <div className="return-button-container">
         <button className="return-button" onClick={() => window.history.back()}>
-          <i className="fa-solid fa-arrow-left"></i>
-          <span>Back</span>
+          <i className="fa-solid fa-arrow-left"></i> Back
         </button>
       </div>
       <div className="property-header-card">
-        <div className="property-map">
-          <img
-            src={
-              "https://st2.depositphotos.com/7341970/10438/v/950/depositphotos_104389540-stock-illustration-city-map-with-streets.jpg"
-            }
-            alt="Property Map"
-          />
-          <div className="map-pin"></div>
-        </div>
-        <div className="property-details">
-          <h2>
-            {property.street}, {property.city}, {property.state}{" "}
-            {property.zipCode}
-          </h2>
-
-          <div className="client-info-container">
-            <div className="client-header">
-              <div className="client-avatar">
-                <div className="avatar-placeholder"></div>
-                <img
-                  src={
-                    "https://i.pinimg.com/736x/c0/74/9b/c0749b7cc401421662ae901ec8f9f660.jpg"
-                  }
-                  alt="Client Avatar"
-                />
-              </div>
-              <div className="client-details">
-                <h3>
-                  {client.firstName} {client.lastName}
-                </h3>
-                <div className="contact-icons">
-                  <i className="fa-solid fa-phone"></i>
-                  <span>{client.phoneNumber}</span>
-
-                  <i className="fa-solid fa-envelope"></i>
-                  <span>{client.email}</span>
+          <div className="property-map">
+            <img
+              src={
+                "https://st2.depositphotos.com/7341970/10438/v/950/depositphotos_104389540-stock-illustration-city-map-with-streets.jpg"
+              }
+              alt="Property Map"
+            />
+            <div className="map-pin"></div>
+          </div>
+          <div className="property-stats">
+            <div className="property-details">
+              <h2 className="property-name"><a href={toGoogleMapsLink(`${property.street}, ${property.city}, ${property.state} ${property.zipCode}`)} target="_blank" rel="noopener noreferrer">
+                {property.street}, {property.city}, {property.state} {property.zipCode}
+              </a></h2>
+            </div>
+            
+            <div className="client-info-card">
+              <div className="client-avatar-and-details"> 
+                <div className="client-avatar">
+                  <img src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"/>
                 </div>
+                <div className="client-details">
+                  <h2 className="client-name">{client.firstName}{client.lastName && ` ${client.lastName}`}</h2>
+                  <div className="client-contact">
+                    <div className="contact-item">
+                      <span><a href={`tel:${formatPhoneNumber(client.phoneNumber)}`}>{formatPhoneNumber(client.phoneNumber)}</a></span>
+                    </div>
+                    <div className="contact-item">
+                      {client.email ? (
+                        <span><a href={`mailto:${client.email}`}>{client.email}</a></span>
+                      ) : (
+                      <span className="noEmail">No email provided</span>)}
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
-        </div>
       </div>
 
       <div className="content-layout">

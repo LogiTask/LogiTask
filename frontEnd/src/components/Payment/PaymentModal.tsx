@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Job, ClientDataID } from '../../types/interfaces';
 import '../../styles/components/PaymentModal.css';
-import '../../styles/components/Modal.css';
+import '../../styles/components/modal.css';
 import api from '../../api';
 
 interface PaymentModalProps {
@@ -10,6 +10,7 @@ interface PaymentModalProps {
   job?: Job;
   client?: ClientDataID;
   onPaymentSubmit: (amount: string, method: string) => void;
+  onPaymentSuccess?: () => void;
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ 
@@ -17,11 +18,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   onClose, 
   job, 
   client, 
-  onPaymentSubmit 
+  onPaymentSubmit,
+  onPaymentSuccess
 }) => {
   // If job is provided, use its set cost, otherwise default to empty string so inputs are more user-friendly
   const [paymentAmount, setPaymentAmount] = useState(job ? job.cost.toString() : '');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [balance, setBalance] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
 
   // Reset payment amount when job or client changes
   useEffect(() => {
@@ -62,6 +66,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           'Content-Type': 'application/json'
       }});
       if (propertyResponse.status === 201) {
+        onPaymentSuccess?.()
         alert("Payment received")
       }
     }catch (err) {
@@ -81,6 +86,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     onClose();
     setPaymentMethod('');
     setPaymentAmount(job ? job.cost.toString() : '');
+    setBalance(null);
+    setRevealed(false);
   };
 
   const handleClearAmount = () => {
@@ -100,6 +107,31 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         setPaymentAmount(value);
     }
   };
+
+  const handleEstimatedBalance = async () => {
+    try {
+      const balanceResponse = await api.get(
+        `/api/get_estimated_balance/${client?.id || job?.client.id}/`
+      );
+
+      if (balanceResponse.status === 200) {
+        setBalance(balanceResponse.data.estimated_balance);
+        setRevealed(true);
+      } else {
+        alert("Failed to get balance.");
+      }
+    } catch (err) {
+      console.error("Error fetching balance:", err);
+      alert(`Error: ${err}`);
+    }
+  };
+
+  const getBalanceLabel = (balance: number | null): string => {
+    if (balance === null) return "Balance unavailable";
+    if (balance < 0) return `Balance Due: $${Math.abs(balance)}`;
+    if (balance > 0) return `Credit: $${balance}`;
+    return "No balance due";
+  }
     
 
   if (!isOpen) return null;
@@ -143,10 +175,27 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <div className="payment-client-info">
                 <i className="fa-solid fa-user"></i>
                 <span>
-                  {job ? `${job.client.firstName} ${job.client.lastName}` : 
-                    client ? `${client.firstName} ${client.lastName}` : 'Client'}
-                </span>
+                  {(() => {
+                    const person = job?.client ?? client;
+                    if (!person) return "No client selected";
+                    return `${person.firstName ?? ""} ${person.lastName ?? ""}`.trim();
+                  })()}
+              </span>
               </div>
+              <button
+                type="button"
+                className="payment-balance-btn"
+                onClick={handleEstimatedBalance}
+                title="Get Estimated Balance"
+              >
+                <i className="fa-solid fa-money-bills"></i>
+                <span className={!revealed ? "not-revealed" : "revealed"}>
+                  {!revealed 
+                    ? "Click to view Balance" 
+                    : getBalanceLabel(balance)
+                  }
+                </span>
+              </button>
             </div>
             
             <div className="modal-form-section">
@@ -258,7 +307,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 type="submit"
                 className="modal-btn-submit" 
                 disabled={handleDisabledSubmit()}
-                onClick={(e) => e.stopPropagation()} // Ensure this does not block form submission
+                onClick={(e) => e.stopPropagation()}
               >
                  Record Payment
               </button>

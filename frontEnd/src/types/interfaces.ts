@@ -1,4 +1,6 @@
 // interfaces.ts
+import { PropertyNote, ScheduleNote } from "./noteTypes";
+
 export interface Property {
   id: number;
   street: string;
@@ -34,6 +36,7 @@ export interface Schedule {
   nextDate: string;
   service: string;
   cost: number;
+  monthly_pricing?: boolean;
 }
 
 export interface Property_list {
@@ -55,11 +58,13 @@ export interface Job {
     city: string;
     state: string;
     zipCode: string;
+    propertynote?: PropertyNote;
   };
   schedule: {
     id: number;
     frequency: string;
     service: string;
+    schedulenote?: ScheduleNote;
   };
   client: {
     id: number;
@@ -157,3 +162,11 @@ export interface ScheduleForManagement {
   dayOfWeek: number;
   property: ScheduleProperty;
 } 
+
+export interface Adjustment {
+  id: number;
+  amount: string;
+  reason: string;
+  created_at: string;
+  adjustment_type: string;
+}

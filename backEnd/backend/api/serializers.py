@@ -1,9 +1,23 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Client, Property,Schedule,Job,Payment,Company,Balance,BalanceHistory,BalanceAdjustment,userProfile
+from .models import Client, Property,Schedule,Job,Payment,Company,Balance,BalanceHistory,BalanceAdjustment,userProfile,NoteTemplate,ScheduleNote,PropertyNote,JobNote
 from django.utils import timezone
 from datetime import timedelta
 import pytz
+
+
+
+class StrippedSerializer(serializers.ModelSerializer):
+    """
+    Base serializer that trims whitespace from all string fields.
+    Safe for None values.
+    """
+    def to_internal_value(self, data):
+        data = data.copy()  # make a mutable copy
+        for field, value in data.items():
+            if isinstance(value, str):  # only strip strings, ignore None/other types
+                data[field] = value.strip()
+        return super().to_internal_value(data)
 class userSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -15,10 +29,28 @@ class userSerializer(serializers.ModelSerializer):
         userProfile.objects.create(user=user)
         return user
 
+class PropertyNoteSerializer(serializers.ModelSerializer):
+   
+    class Meta:
+        model = PropertyNote
+        fields = ["id","title","content","created_at","last_modified"]
+        extra_kwargs = {"id": {"read_only":True},
+                        "created_at": {"read_only":True}}
+
+class ScheduleNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScheduleNote
+        fields = ["id","title","content","created_at","last_modified"]
+  
+class JobNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobNote
+        fields = ["id","title","content","created_at","last_modified"]
 class PropertySerializer(serializers.ModelSerializer):
+    propertynote = PropertyNoteSerializer(read_only=True)
     class Meta:
         model = Property
-        fields = ["id", "street", "city", "state", "zipCode"]
+        fields = ["id", "street", "city", "state", "zipCode","propertynote"]
 
 class ClientSerializer(serializers.ModelSerializer):
     properties = PropertySerializer(many=True, read_only=True)
@@ -36,12 +68,14 @@ class ClientOnlySerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "created_at": {"read_only":True}
         }
+    
+    
 
 class ScheduleSerializer(serializers.ModelSerializer):
-
+    schedulenote = ScheduleNoteSerializer(read_only=True)
     class Meta:
         model = Schedule
-        fields = ["id", "frequency","nextDate","endDate","service","cost","isActive","order","schedule_day"]
+        fields = ["id", "frequency","nextDate","endDate","service","cost","isActive","order","schedule_day",'schedulenote', "monthly_pricing"]
     
     def update(self, instance, validated_data):
         instance = super().update(instance, validated_data)
@@ -127,7 +161,7 @@ class JobSerializer(serializers.ModelSerializer):
     property = serializers.SerializerMethodField()
     schedule = ScheduleSerializer()
     client = OnlyClientSerializer()
-
+    
     class Meta:
         model = Job
         fields = ['id', 'jobDate', 'status', 'cost','complete_date', 'property', 'schedule', 'client','order']
@@ -199,10 +233,10 @@ class JobOnlySerializer(serializers.ModelSerializer):
    
 class ScheduleJobsSerializer(serializers.ModelSerializer):
     jobs = JobOnlySerializer(source='job_set',many=True,read_only=True)
-
+    schedulenote = ScheduleNoteSerializer(read_only=True)
     class Meta:
         model = Schedule
-        fields = fields = ["id", "frequency","service","cost","nextDate","endDate","isActive","jobs"]
+        fields = fields = ["id", "frequency","service","cost","nextDate","endDate","isActive","jobs","schedulenote"]
 
 class PropertyServiceInfoSerializer(serializers.ModelSerializer):
     schedules = ScheduleJobsSerializer(many=True,read_only=True)
@@ -310,3 +344,6 @@ class PaymentInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model=Payment
         fields = ["id","amount","paymentType","paymentDate","client"]
+
+
+  

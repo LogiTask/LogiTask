@@ -37,4 +37,14 @@ urlpatterns = [
     path( 'schedules/management/', views.get_schedules.as_view(), name='view-schedule-order'),
     path('schedules/reorder/', views.update_schedules.as_view(), name='update-scheudle-order'),
     path('jobs/update-order/',views.update_Jobs_Order.as_view(), name='update-job-order'),
+    path("schedule/<int:schedule_id>/notes/",views.ScheduleNoteListCreate.as_view(), name="schedule-notes" ),
+    path("property/<int:property_id>/notes/",views.PropertyNoteListCreate.as_view(), name="property-notes" ),
+    path("job/<int:job_id>/notes/",views.JobNoteListCreate.as_view(), name="job-notes" ),
+    path("schedule-note/<int:pk>/", views.GetScheduleNote.as_view(), name='schedule-note'),
+    path("property-note/<int:pk>/", views.GetPropertyNote.as_view(), name='schedule-note'),
+    path("job-note/<int:pk>/", views.GetJobNote.as_view(), name='schedule-note'),
+    path("schedule-note/modify/<int:pk>/", views.ScheduleNoteDetailView.as_view(), name='schedule-note-modify'),
+    path("property-note/modify/<int:pk>/", views.PropertyNoteDetailView.as_view(), name='property-note-modify'),
+    path("job-note/modify/<int:pk>/", views.JobNoteDetailView.as_view(), name='job-note-modify'),
+    
 ]

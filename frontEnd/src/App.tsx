@@ -11,7 +11,7 @@ import Home from "./pages/Home";
 import ErrorPage from "./pages/ErrorPage";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import Dev from "./pages/dev";
-import { CompanySetUp } from "./pages/CompanySetUp";
+import CompanySetUp from "./pages/CompanySetUp";
 import PropertyView from "./pages/PropertyView";
 import ClientView from "./pages/ClientView";
 import ScheduleManagement from "./pages/ScheduleManagement";

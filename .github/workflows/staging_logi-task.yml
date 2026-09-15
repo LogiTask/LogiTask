@@ -7,7 +7,7 @@ name: Build and deploy Python app to Azure Web App - Logi-Task
 on:
   push:
     branches:
-      - deploy-version
+      - staging
   workflow_dispatch:
 
 jobs:
@@ -40,15 +40,14 @@ jobs:
         run: |
           cd backEnd/backend/
           python manage.py collectstatic --noinput
-          
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
-
+      
       - name: Zip artifact for deployment
         run: |
           cd backEnd/backend/
           zip release.zip ./* -r
-
+      
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
@@ -60,24 +59,30 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: python-app
-
+      
       - name: Unzip artifact for deployment
         run: unzip release.zip
+        
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D30C0049FC6642548B500F0DE29DFAE4 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_E555C56457074AFCA4963E6038E74F29 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_999C83D07C2E4D08BCA25E88AD55745B }}
 
-      
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
           app-name: 'Logi-Task'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6FC464AA9D4743828033E125717B331A }}
+          

@@ -58,6 +58,7 @@ const nextSixDays = useMemo(() => {
   return (
     <>
       <div className="daily-reschedule-strip-container">
+        <div className="drag-tip">Drag and drop to reschedule to another date!</div>
         <section className="daily-reschedule-strip">
           {nextSixDays.map((day, index) => (
             <div 
@@ -68,7 +69,7 @@ const nextSixDays = useMemo(() => {
               {/* Month and day at the bottom */}
               <span className="dates">
                 {new Intl.DateTimeFormat('en-US', { 
-                  month: 'long', 
+                  month: 'short', 
                   day: 'numeric',
                   timeZone: userTimeZone 
                 }).format(day.date)}

@@ -91,7 +91,7 @@
     }
     
     .bottom-menu-button-container {
-        gap: 15px;
+        gap: 10px;
     }
 }
 
@@ -104,12 +104,12 @@
     }
     
     .action-button {
-        width: clamp(60px, 8vw, 80px); /* Responsive width */
-        height: clamp(60px, 8vw, 80px);
+        width: clamp(50px, 6vw, 80px); /* Responsive width */
+        height: clamp(50px, 6vw, 80px);
         font-size: 20px; /* Smaller icon size */
     }
     
     .bottom-menu-container {
-        gap: clamp(30px, 5vw, 40px); /* Smaller gap for very small screens */
+        gap: clamp(0px, 3vw, 30px); /* Smaller gap for very small screens */
     }
 }    

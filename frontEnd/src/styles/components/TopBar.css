@@ -57,6 +57,15 @@
   gap: clamp(7px, 1.5vw, 10px);
 }
 
+.client-item span a, .service-item a {
+  color: #dddada;
+}
+
+.client-item span a:hover, .service-item a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
 .client-info .client-item:first-child span, .address {
   font-weight: 600;
 }
@@ -156,7 +165,9 @@
 }
 
 .job-info .service-pill:hover,
-.job-info .frequency-pill:hover {
+.job-info .frequency-pill:hover,
+.job-info .cost-pill:hover,
+.job-info .note-pill:hover {
   transform: translateY(-1px);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
@@ -207,6 +218,23 @@
 .job-info .cost-pill:hover {
   background: rgba(76, 175, 80, 0.25);
   transform: translateY(-1px);
+}
+
+/* Note Button Pill */
+.job-info .note-pill {  
+  color: #fdff9cb7;
+  background: #fdff9c28;
+  border: 1px solid #fdff9c33;
+  user-select: none;
+}
+
+.job-info .note-pill i {
+  color: #feff9c;
+}
+
+.job-info .note-pill:hover {
+  background: rgba(226, 217, 139, 0.25);
+  cursor: pointer;
 }
 
 /* Sort Controls
@@ -308,9 +336,8 @@
   .info-container {
     padding: clamp(18px, 19px, 20px) clamp(15px, 18px, 20px);
   }
-  .pill-container .job-client {
-    padding: 4px 8px;
-    font-size: clamp(0.75rem, 1.2vw, 0.85rem);
+  .pill-container {
+    padding: 4px 6px;
   }
 }
 
@@ -323,8 +350,9 @@
     padding: clamp(19px, 2vw, 21px) 0px 0px clamp(15px, 3vw, 20px);
     font-size: clamp(12px, 2vw, 14px);
   }
+
   .pill-container {
-    padding: 4px 6px;
-    font-size: clamp(10px, 2vw, 11px);
+    font-size: clamp(0.75rem, 1vw, 0.9rem);
+    padding: 3px 5px;
   }
 }

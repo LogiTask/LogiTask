@@ -57,6 +57,9 @@
 .popup-menu-button.my-team-button svg {
     color: #22C55E; 
 }
+.popup-menu-button.schedules-button svg {
+    color: #e9cf3a; 
+}
 
 .company-profile-card {
     position: relative;

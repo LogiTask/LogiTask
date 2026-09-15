@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Job } from '../../types/interfaces';
 import PaymentModal from '../Payment/PaymentModal';
 import '../../styles/components/DailyListItem.css';
 import '../../styles/components/listItem.css';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface DailyListItemProps {
   job: Job;
@@ -12,10 +13,11 @@ interface DailyListItemProps {
   onModalToggle?: (isOpen: boolean) => void;
 }
 
-const DailyListItem: React.FC<DailyListItemProps> = ({ job, isFocused, onClick, onComplete, onModalToggle }) => {
+const DailyListItemComponent: React.FC<DailyListItemProps> = ({ job, isFocused, onClick, onComplete, onModalToggle }) => {
   const isComplete = job.status === 'complete';
-  const [isHovered, setIsHovered] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleItemClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -25,14 +27,19 @@ const DailyListItem: React.FC<DailyListItemProps> = ({ job, isFocused, onClick, 
     }
   };
 
-  const handleIconClick = (e: React.MouseEvent) => {
+  const handleIconClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (isLoading) return;
     
     if (isFocused && onComplete) {
-      // If already focused, complete it
-      onComplete(job.id);
+        setIsLoading(true);
+        try {
+          await onComplete(job.id);
+        } finally {
+          setIsLoading(false);
+        }
     } else {
-      // If not focused, focus it
       onClick(job.id);
     }
   };
@@ -58,18 +65,23 @@ const DailyListItem: React.FC<DailyListItemProps> = ({ job, isFocused, onClick, 
   return (
     <>
       <li
-        className={`list-item daily-item ${isFocused ? 'focused daily-focused' : ''} ${isComplete ? 'daily-complete' : ''} ${isHovered ? 'hovered' : ''}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        className={`list-item daily-item ${isFocused ? 'focused daily-focused' : ''} ${isComplete ? 'daily-complete' : ''}`}
         onClick={handleItemClick}
         data-job-id={job.id}
       >
         <div className="list-item-header">
           <div 
-            className={`daily-icon ${isComplete ? 'status-complete' : isFocused ? 'status-focused' : 'status-pending'}`}
+            className={`daily-icon ${
+              isLoading ? 'status-loading' : 
+              isComplete ? 'status-complete' : 
+              isFocused ? 'status-focused' : 
+              'status-pending'
+            }`}
             onClick={handleIconClick}
           >
-            {isComplete ? (
+            {isLoading ? (
+              <i className="fa-solid fa-spinner"></i>
+            ) : isComplete ? (
               <i className="fa-solid fa-check-circle"></i>
             ) : isFocused ? (
               <i className="fa-regular fa-circle-dot"></i>
@@ -101,9 +113,14 @@ const DailyListItem: React.FC<DailyListItemProps> = ({ job, isFocused, onClick, 
         onClose={closePaymentModal}
         job={job}
         onPaymentSubmit={handlePaymentSubmit}
+        onPaymentSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['todaysPayments'] })
+        }}
       />
     </>
   );
 };
+
+const DailyListItem = memo(DailyListItemComponent)
 
 export default DailyListItem;

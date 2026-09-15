@@ -24,6 +24,7 @@ const SortableScheduleItem: React.FC<SortableScheduleItemProps> = ({
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging: internalIsDragging = false,
@@ -123,11 +124,9 @@ const SortableScheduleItem: React.FC<SortableScheduleItemProps> = ({
         transition,
       }}
       className={internalIsDragging ? "hidden-during-drag" : ""}
-      {...attributes}
-      {...listeners}  
     >
       <motion.div 
-        className="sortable-schedule-wrapper"
+        className={`sortable-schedule-wrapper${internalIsDragging ? ' draggable' : ''}`}
         animate={dragStyle}
         transition={{
           rotate: {
@@ -150,6 +149,11 @@ const SortableScheduleItem: React.FC<SortableScheduleItemProps> = ({
         <ScheduleListItem 
           schedule={schedule}
           index={index}
+          dragHandleProps={{
+            ref: setActivatorNodeRef,
+            listeners,
+            ...attributes
+          }}
         />
       </motion.div>
     </div>

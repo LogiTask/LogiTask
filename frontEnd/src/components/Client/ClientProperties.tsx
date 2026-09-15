@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { memo, useCallback, useMemo, useState } from "react";
 import "../../styles/components/ClientProperties.css";
 import AddPropertyModal from "../Property/AddPropertyModal";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +10,7 @@ interface ClientPropertiesProps {
   onPropertyModalStateChange?: (isOpen: boolean) => void;
 }
 
-const ClientProperties: React.FC<ClientPropertiesProps> = ({
+const ClientPropertiesComponent: React.FC<ClientPropertiesProps> = ({
   client,
   visible,
   onPropertyModalStateChange,
@@ -18,9 +18,7 @@ const ClientProperties: React.FC<ClientPropertiesProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  if (!visible) return null;
-
-  const handleModalState = (isOpen: boolean) => {
+  const handleModalState = useCallback((isOpen: boolean) => {
     setIsModalOpen(isOpen);
     if (isOpen && onPropertyModalStateChange) {
       onPropertyModalStateChange(true);
@@ -28,9 +26,9 @@ const ClientProperties: React.FC<ClientPropertiesProps> = ({
     else {
       onPropertyModalStateChange?.(false);
     }
-  };
-
-   const handlePropertyClick = (propertyIndex: number) => {
+  }, [onPropertyModalStateChange]);
+  
+  const handlePropertyClick = useCallback((propertyIndex: number) => {
 
     const property = client.properties[propertyIndex];
     
@@ -40,12 +38,16 @@ const ClientProperties: React.FC<ClientPropertiesProps> = ({
         client: client,
       }
     });
-  };
+  }, [client, navigate]);
+
+  const properties = useMemo(() => client.properties || [], [client.properties]);
+  
+  if (!visible) return null;
 
   return (
     <div className="properties-container">
-      {client.properties && client.properties.length > 0 ? (
-        client.properties.map((property, index: number) => (
+      {properties.length > 0 ? (
+        properties.map((property, index: number) => (
           <div
             key={index}
             className="property-item"
@@ -73,7 +75,7 @@ const ClientProperties: React.FC<ClientPropertiesProps> = ({
         className="add-property-item"
         onClick={() => handleModalState(true)}
         style={{
-          animationDelay: `${100 + (client.properties?.length || 0) * 100}ms`,
+          animationDelay: `${100 + properties.length * 100}ms`,
         }}
       >
         <div className="add-property-icon">
@@ -91,5 +93,7 @@ const ClientProperties: React.FC<ClientPropertiesProps> = ({
     </div>
   );
 };
+
+const ClientProperties = memo(ClientPropertiesComponent);
 
 export default ClientProperties;

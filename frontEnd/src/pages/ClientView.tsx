@@ -3,12 +3,14 @@ import api from "../api";
 import { useLocation } from "react-router-dom";
 import { useQueryClient } from '@tanstack/react-query';
 import { updateClientInCaches } from '../utils/cacheUpdates';
-import { ClientDataID, clientViewJob, Payment } from "../types/interfaces";
+import { ClientDataID, clientViewJob, Payment, Adjustment } from "../types/interfaces";
 import "../styles/pages/ClientView.css";
 import { formatPhoneNumber, formatUTCtoLocal }  from "../utils/format";
 import PaymentModal from '../components/Payment/PaymentModal';
 import AdjustmentModal from '../components/Payment/AdjustmentModal';
 import EditClientModal from "../components/Client/EditClientModal";
+import { useNavigate } from "react-router-dom";
+
 
 const ClientView: React.FC = () => {
     const location = useLocation();
@@ -18,7 +20,6 @@ const ClientView: React.FC = () => {
     };
 
     const [client, setClient] = useState<ClientDataID>(initialClient);
-
     const [newBalance, setNewBalance] = useState<number>(0);
     const [allPayments, setTotalPayments] = useState<(Payment & { invoiced: boolean })[]>([]);
     const [allPaymentsTotal, setAllPaymentsTotal] = useState<number>(0);
@@ -27,71 +28,90 @@ const ClientView: React.FC = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [allJobsCompleted, setAllJobsCompleted] = useState<(clientViewJob & { invoiced: boolean })[]>([]);
     const [allJobsTotal, setAllJobsTotal] = useState<number>(0);
+    const [allAdjustments, setAllAdjustments] = useState<(Adjustment & { invoiced: boolean })[]>([]);
+    const [allAdjustmentsTotal, setAllAdjustmentsTotal] = useState<number>(0);
+    const [adjustmentDebits, setAdjustmentDebits] = useState<number>(0);
+    const [adjustmentCredits, setAdjustmentCredits] = useState<number>(0);
+    
 
     const timezone = localStorage.getItem("userTimeZone") || "UTC";
 
-    useEffect(() => {
+    const navigate = useNavigate();
+
+    const fetchClientData = async () => {
         const combinedJobs: (clientViewJob & { invoiced: boolean })[] = [];
         let combinedJobTotalCents = 0;
 
         const combinedPayments: (Payment & { invoiced: boolean })[] = [];
         let combinedPaymentsTotalCents = 0;
 
+        const combinedAdjustments: (Adjustment & { invoiced: boolean })[] = [];
+        let combinedAdjustmentsTotalCents = 0;
+
         let combinedBalance = 0;
+        let debitSum = 0;
+        let creditSum = 0;
 
-        api.get(`/api/client/${client.id}/unapplied/`)
-            .then(response => {
-            combinedBalance += parseFloat(response.data.delta);
+        try {
+            const unappliedRes = await api.get(`/api/client/${client.id}/unapplied/`);
 
-            const unapplied = response.data.unapplied_jobs;
-            if (Array.isArray(unapplied)) {
-                for (const job of unapplied.reverse()) {
-                    combinedJobs.push({ ...job, invoiced: false });
-                    combinedJobTotalCents += parseFloat(job.cost) * 100;
-                    console.log("Unapplied Job:", job);
-                }
+            combinedBalance += parseFloat(unappliedRes.data.delta);
+
+            for (const job of [...(unappliedRes.data.unapplied_jobs || [])].reverse()) {
+            combinedJobs.push({ ...job, invoiced: false });
+            combinedJobTotalCents += parseFloat(job.cost) * 100;
             }
 
-            const unappliedPayments = response.data.unapplied_payments;
-            if (Array.isArray(unappliedPayments)) {
-                for (const payment of unappliedPayments.reverse()) {
-                    combinedPayments.push({ ...payment, invoiced: false });
-                    combinedPaymentsTotalCents += parseFloat(payment.amount) * 100; 
-                }
+            for (const payment of [...(unappliedRes.data.unapplied_payments || [])].reverse()) {
+            combinedPayments.push({ ...payment, invoiced: false });
+            combinedPaymentsTotalCents += parseFloat(payment.amount) * 100;
             }
 
-            return api.get(`/api/balance-history/${client.id}/`);
-            })
-            .then(response => {
-                if (response.data && response.data.length > 0) {
-                    combinedBalance += parseFloat(response.data[response.data.length - 1].new_balance);
-                    
-                    for (const dataItem of response.data) {
-                        if (Array.isArray(dataItem.jobs)) {
-                            for (const job of dataItem.jobs.reverse()) {
-                                combinedJobs.push({ ...job, invoiced: true });
-                                combinedJobTotalCents += parseFloat(job.cost) * 100;
-                                console.log("Invoiced Job:", job);
-                            }
-                        }
-                        
-                        if (Array.isArray(dataItem.payments)) {
-                            for (const payment of dataItem.payments.reverse()) {
-                                combinedPayments.push({ ...payment, invoiced: true });
-                                combinedPaymentsTotalCents += parseFloat(payment.amount) * 100; 
-                            }
-                        }
-                    }
+            for (const adjustment of [...(unappliedRes.data.unapplied_adjustments || [])].reverse()) {
+            const amt = Math.abs(parseFloat(adjustment.amount));
+            adjustment.adjustment_type === "debit" ? debitSum += amt : creditSum += amt;
+            combinedAdjustments.push({ ...adjustment, invoiced: false });
+            combinedAdjustmentsTotalCents += parseFloat(adjustment.amount) * 100;
+            }
+
+            const historyRes = await api.get(`/api/balance-history/${client.id}/`);
+
+            if (historyRes.data?.length) {
+            combinedBalance += parseFloat(
+                historyRes.data[historyRes.data.length - 1].new_balance
+            );
+
+            for (const item of historyRes.data) {
+                for (const job of [...(item.jobs || [])].reverse()) {
+                combinedJobs.push({ ...job, invoiced: true });
+                combinedJobTotalCents += parseFloat(job.cost) * 100;
                 }
-                setAllJobsCompleted(combinedJobs);
-                setAllJobsTotal(combinedJobTotalCents / 100);
-                setTotalPayments(combinedPayments);
-                setAllPaymentsTotal(combinedPaymentsTotalCents / 100);
-                setNewBalance(combinedBalance);
-            })
-        .catch(error => {
-            console.error('Error fetching jobs:', error);
-        });
+
+                for (const payment of [...(item.payments || [])].reverse()) {
+                combinedPayments.push({ ...payment, invoiced: true });
+                combinedPaymentsTotalCents += parseFloat(payment.amount) * 100;
+                }
+            }
+            }
+
+            // 🔽 single state commit
+            setAllJobsCompleted(combinedJobs);
+            setAllJobsTotal(combinedJobTotalCents / 100);
+            setTotalPayments(combinedPayments);
+            setAllPaymentsTotal(combinedPaymentsTotalCents / 100);
+            setAllAdjustments(combinedAdjustments);
+            setAllAdjustmentsTotal(combinedAdjustmentsTotalCents / 100);
+            setAdjustmentDebits(debitSum);
+            setAdjustmentCredits(creditSum);
+            setNewBalance(combinedBalance);
+
+        } catch (err) {
+            console.error("Error fetching client data:", err);
+        }
+    };
+
+    useEffect(() => {
+        fetchClientData();
     }, [client.id]);
 
     const handleClientUpdated = (updatedClient: ClientDataID) => {
@@ -106,8 +126,8 @@ const ClientView: React.FC = () => {
             return [fullGreen, 100];
         }
 
-        const paid = Math.max(0, allPaymentsTotal);                 // never negative
-        const percentPaid = Math.min(100, (paid / allJobsTotal) * 100);
+        const paid = Math.max(0, allPaymentsTotal);
+        const percentPaid = Math.min(100, (((paid +  Math.abs(adjustmentCredits)) / (allJobsTotal + Math.abs(adjustmentDebits))) * 100));
 
         const eased = Math.pow(percentPaid / 100, 0.85);    
         const hue = eased * 80;                                                    
@@ -125,15 +145,20 @@ const ClientView: React.FC = () => {
             setShowEditModal(true);
     };
 
+    const handlePropertyClick = (propertyIndex: number) => {
+        const property = client.properties[propertyIndex];
+        navigate(`/property-view/`, { state: { property, client } });
+    }
 
     return (
         <div className="client-view-container">
             {/* Top Section */}
-            <div className="back-button-container">
+            <div className="return-button-container">
                 <button className="return-button" onClick={() => window.history.back()}>
                     <i className="fa-solid fa-arrow-left"></i> Back
                 </button>
             </div>
+
             <div className="client-header-section">
                 {/* Client Info Card */}
                 <div className="client-info-card">
@@ -146,12 +171,14 @@ const ClientView: React.FC = () => {
                             <h2 className="client-name">{client.firstName} {client.lastName}</h2>
                             <div className="client-contact">
                                 <div className="contact-item">
-                                    <i className="fa-solid fa-phone"></i>
-                                    <span>{formatPhoneNumber(client.phoneNumber)}</span>
+                                    <span><a href={`tel:${formatPhoneNumber(client.phoneNumber)}`}>{formatPhoneNumber(client.phoneNumber)}</a></span>
                                 </div>
                                 <div className="contact-item">
-                                    <i className="fa-solid fa-envelope"></i>
-                                    <span>{client.email}</span>
+                                    {client.email ? (
+                                        <span><a href={`mailto:${client.email}`}>{client.email}</a></span>
+                                    ) : (
+                                        <span className="noEmail">No email provided</span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -211,8 +238,8 @@ const ClientView: React.FC = () => {
                     <h3 className="panel-header">Addresses</h3>
                     <ul className="address-list">
                         {client.properties.map((property, i) => (
-                            <li key={i} className="client-address-item">
-                                {property.street}
+                            <li key={i} className="client-address-item" onClick={() => handlePropertyClick(i)}>
+                                    {property.street}
                             </li>
                         ))}
                     </ul>
@@ -220,14 +247,14 @@ const ClientView: React.FC = () => {
                 
                 {/* Services */}
                 <div className="client-panel services-panel">
-                    <h3 className="panel-header">Completed Jobs<span className="total-amount">${allJobsTotal.toFixed(2)}</span></h3>
+                    <h3 className="panel-header">Completed Jobs ( {allJobsCompleted.length} )<span className="total-amount">${allJobsTotal.toFixed(2)}</span></h3>
                     <div className="table-container">
                         <table className="data-table">
                             <thead>
                                 <tr>
                                     <th>Address</th>
                                     <th>Service</th>
-                                    <th>Date</th>
+                                    <th className="date-column">Date</th>
                                     <th>Amount</th>
                                 </tr>
                             </thead>
@@ -236,7 +263,7 @@ const ClientView: React.FC = () => {
                                     <tr className={job.invoiced ? "invoiced-job" : "unapplied-job"} key={i}>
                                         <td>{job.property.street}</td>
                                         <td>{job.schedule.service}</td>
-                                        <td>{formatUTCtoLocal(job.complete_date, timezone)}</td>
+                                        <td className="date-column">{formatUTCtoLocal(job.complete_date, timezone)}</td>
                                         <td>${job.cost}</td>
                                     </tr>
                                 ))}
@@ -247,12 +274,12 @@ const ClientView: React.FC = () => {
                 
                 {/* Payments */}
                 <div className="client-panel payments-panel">
-                    <h3 className="panel-header">Payments<span className="total-amount">${allPaymentsTotal.toFixed(2)}</span></h3>
+                    <h3 className="panel-header">Payments ( {allPayments.length} )<span className="total-amount">${allPaymentsTotal.toFixed(2)}</span></h3>
                     <div className="table-container">
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
+                                    <th className="date-column">Date</th>
                                     <th>Method</th>
                                     <th>Amount</th>
                                 </tr>
@@ -260,7 +287,7 @@ const ClientView: React.FC = () => {
                             <tbody>
                                 {allPayments.map((payment, i) => (
                                     <tr className={payment.invoiced ? "invoiced-payment" : "unapplied-payment"} key={i}>
-                                        <td>{formatUTCtoLocal(payment.paymentDate, timezone)}</td>
+                                        <td className="date-column">{formatUTCtoLocal(payment.paymentDate, timezone)}</td>
                                         <td>{payment.paymentType}</td>
                                         <td>${payment.amount}</td>
                                     </tr>
@@ -269,17 +296,51 @@ const ClientView: React.FC = () => {
                         </table>
                     </div>
                 </div>
+                {allAdjustmentsTotal !== 0 && (
+                <div className="client-panel adjustments-panel">
+                    <h3 className="panel-header">Adjustments ( {allAdjustments.length} )<span className="total-amount">${Math.abs(allAdjustmentsTotal).toFixed(2)}</span></h3>
+                    <div className="table-container">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th className="date-column">Date</th>
+                                    <th>Type</th>
+                                    <th>Reason</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {allAdjustments.map((adjustment, i) => (
+                                    <tr className={adjustment.invoiced ? "invoiced-adjustment" : "unapplied-adjustment"} key={i}>
+                                        <td className="date-column">{formatUTCtoLocal(adjustment.created_at, timezone)}</td>
+                                        <td>{adjustment.adjustment_type.charAt(0).toUpperCase() + adjustment.adjustment_type.slice(1)}</td>
+                                        <td>{adjustment.reason ? adjustment.reason : "none"}</td>
+                                        <td>${Math.abs(parseFloat(adjustment.amount))}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div> 
+            )}
             </div>
             <PaymentModal 
                 isOpen={showPaymentModal}
                 onClose={() => setShowPaymentModal(false)}
                 client={client}
                 onPaymentSubmit={() => setShowPaymentModal(false)}
+                onPaymentSuccess={() => {
+                    queryClient.invalidateQueries({ queryKey: ['todaysPayments'] })
+                    fetchClientData();
+                }}
             />
             <AdjustmentModal
                 isOpen={showAdjustmentModal}
                 client={client}
                 onClose={() => setShowAdjustmentModal(false)}
+                onAdjustmentSuccess={() => {
+                    fetchClientData();
+                }}
             />
             <EditClientModal 
                 isOpen={showEditModal}

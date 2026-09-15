@@ -1,34 +1,32 @@
 .jo-container {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  background-color: rgba(40, 40, 43, 1);
-  color: var(--text-primary, rgba(255, 255, 255, 0.95));
+  position: fixed;
+  flex-direction: column;
+  gap: 20px;
+  padding: 30px 50px 100px;
+  background: rgba(40, 40, 43, 1);
+  color: white;
   font-family: 'Outfit', sans-serif;
   user-select: none;
-  padding-bottom: 100px;
-  position: relative; 
+  touch-action: pan-y; 
+  -webkit-overflow-scrolling: touch; 
+  height: 100vh;
+  width: 100vw;
 }
 
 .jo-content-wrapper {
   width: 100%;
-  max-width: 800px; 
-  padding: 40px clamp(20px, 5vw, 50px);
+  max-width: 850px; 
+  padding: 0px 20px 0px 20px;
   display: flex;
   flex-direction: column;
-  overflow: scroll; 
-  height: auto;
+  overflow-y: auto; 
   -ms-overflow-style: none;
   scrollbar-width: none;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.back-button {
-  position: absolute;
-  top: 5vh;
-  left: 5vw;
-  z-index: 100;
-}
+
 
 .jo-header {
   margin-bottom: 20px;
@@ -144,10 +142,10 @@
   flex-direction: column;
   animation: fadeIn 0.4s ease-out;
   width: 100%; 
-  max-height: 78vh; 
+  max-height: 75vh; 
   overflow-y: auto; 
   overflow-x: hidden;
-  padding-left: 10px; 
+  
 }
 
 /* No schedules message */
@@ -200,8 +198,49 @@ h2 span {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-bottom: 200px;
-  list-style-type: none;
+  padding: 0px 15px 0px 15px;
+  max-height: 70vh; 
+  overflow-y: scroll; 
+  scrollbar-width: thin;
+  scrollbar-color: #ffca28 rgba(40, 40, 43, 0.5);
+  -webkit-overflow-scrolling: none;
+}
+
+.sch-item-inner {
+  display: flex;
+  gap: 5px;
+}
+
+.sch-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: grab;
+  touch-action: none;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+} 
+
+.sch-drag-handle i {
+  font-size: 1.1rem;
+}
+
+.sch-drag-handle:hover,
+.sch-drag-handle:focus {
+  color: var(--color-focused, #ffca28);
+}
+
+.sch-drag-handle:active {
+  cursor: grabbing;
+}
+
+.sch-drag-handle:focus-visible {
+  outline: 2px solid var(--color-focused, #ffca28);
+  outline-offset: 2px;
 }
 
 .jo-schedules-list li,
@@ -218,11 +257,13 @@ h2 span {
   white-space: nowrap;
   font-size: clamp(0.8rem, 1rem, 1.25rem);
   color: var(--text-primary, rgba(255, 255, 255, 0.95));
+  width: 93%;
 }
 
 /* Schedule List Item Styling */
 .list-item.sch-item {
   border-left-color: #5b585d;
+  padding-right: 15px;
   min-width: 0;
 }
 
@@ -233,9 +274,10 @@ h2 span {
 }
 
 /* Item header with client name and priority badge */
-.sch-header {
+.sch-header, .sch-details {
   display: flex;
-  justify-content: space-between;
+  position: relative;
+  width: 100%;
 }
 
 .sch-content {
@@ -287,7 +329,6 @@ h2 span {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 15px;
   flex-wrap: nowrap;
 }
 
@@ -336,11 +377,12 @@ h2 span {
   font-size: 0.7rem;
 }
 
-.sch-next-date-pill {
-  background-color: rgba(26, 26, 25, 0.2);
-  border: 1px solid rgba(131, 131, 132, 0.397);
-  color: #fdfdfebc;
-}
+
+          .sch-next-date-pill {
+            background-color: rgba(26, 26, 25, 0.2);
+            border: 1px solid rgba(131, 131, 132, 0.397);
+            color: #fdfdfebc;
+          }
 
 
 .jo-content::after {
@@ -439,4 +481,10 @@ h2 span {
     padding: 3px 8px;
     font-size: 0.75rem;
   }
+}
+
+.sortable-schedule-wrapper.draggable {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }

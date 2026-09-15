@@ -1,7 +1,7 @@
 .calendar-container {
   font-family: "Outfit", sans-serif;
-  position: absolute;
-  top: clamp(180px, 15vh, 240px); 
+  position: fixed;
+  top: clamp(200px, 15vh, 240px); 
   left: 6vw;
   width: clamp(400px, 50vw, 400px); 
   padding: clamp(15px, 3vw, 20px); 

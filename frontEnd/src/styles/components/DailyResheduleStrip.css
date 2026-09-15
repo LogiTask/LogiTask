@@ -9,6 +9,21 @@
   animation: fadeIn 0.3s ease-in-out forwards;
 }
 
+.drag-tip {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  color: #555;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  user-select: none;
+  white-space: nowrap;
+}
+
 .daily-reschedule-delete, .daily-reschedule-strip-container {
   font-family: 'outfit', sans-serif;
 }
@@ -48,7 +63,7 @@
 .box {
   width: clamp(4rem, 10vw, 5.5rem);
   height: clamp(4.5rem, 12vw, 6rem);
-  background: #aeb2ba37;
+  background: #aeb2ba81;
   border: 2px solid #e0e6f2;
   border-radius: 10px;
   display: flex;
@@ -75,7 +90,7 @@
 }
 
 .dates {
-  font-size: clamp(0.75rem, 1.8vw, 0.85rem); 
+  font-size: clamp(0.9rem, 1.8vw, 1rem); 
   color: #5d6b8a;
   text-align: center;
   border-radius: 4px;
@@ -154,6 +169,11 @@
   .box.is-over::before {
     top: -8px;
   }
+
+  .trash-can {
+    right: 10px;
+    bottom: 10px;
+  }
 }
 
 .box.is-over {
@@ -222,7 +242,9 @@
 .trash-can {
   width: clamp(50px, 12vw, 70px);
   height: clamp(60px, 15vw, 80px);
-  position: relative;
+  left: 10px;
+  bottom: 10px;
+  position: absolute;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }

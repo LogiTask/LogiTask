@@ -71,3 +71,4 @@ media/
 
 # Ignore all files in the static directory
 static/
+staticfiles/

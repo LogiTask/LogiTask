@@ -7,6 +7,7 @@
 
   /* Status Colors - Clear and intuitive */
   --color-pending: #90caf9; 
+  --color-loading: #1ec3ff;
   --color-focused: #ffca28;
   --color-complete: #4CAF50;
   --color-complete-focused: #0a8a0f;
@@ -33,15 +34,15 @@
 .daily-item.list-item {
   background: var(--item-bg);
   color: var(--text-primary);
-  padding: clamp(10px, 2vw, 20px) clamp(20px, 3vw, 40px);
+  padding: 20px 25px;
   border-radius: 10px 0 0 10px;
   border-left: 3px solid transparent;
   font-size: clamp(0.875rem, 1.5vw, 1.125rem); 
+  transition: box-shadow 0.3s, background 0.3s, border-left-color 0.3s, transform 0.2s, color 0.3s;
 }
 
 /* Hover state - subtle lift */
 .daily-item.list-item:hover {
-  transform: scale(1.02);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   z-index: 2;
 }
@@ -69,6 +70,9 @@
   color: var(--text-primary);
 }
 
+.daily-item.list-item.focused:hover, .daily-item.daily-complete.focused:active {
+  transform: scale(1.03);
+}
 /* Icon styles */
 .daily-icon {
   display: flex;
@@ -76,7 +80,7 @@
   justify-content: center;
   position: relative;
   cursor: pointer;
-  font-size: clamp(15px, 4vw, 25px);
+  font-size: clamp(1px, 4vw, 25px);
   transition: all 0.2s ease;
 }
 
@@ -91,6 +95,12 @@
 
 .daily-icon.status-complete i {
   color: var(--color-complete);
+}
+
+.daily-icon.status-loading i {
+  color: var(--color-loading);
+  animation: spin 2s linear infinite;
+  
 }
 
 /* Daily content styles */
@@ -121,8 +131,8 @@
 
 @media (max-width: 850px) {
   .daily-item.list-item {
-    padding: clamp(14px, 2vw, 16px) clamp(15px, 3vw, 18px);
-    font-size: clamp(12px, 13px, 14px);
+    padding: 20px 15px;
+    font-size: 1.2rem;
   }
   .client-payment-button, .gear-button {
     width: clamp(22px, 6vw, 26px);

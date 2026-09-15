@@ -28,7 +28,8 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
             frequency: "",
             nextDate: "",
             service: "",
-            cost: 0.00
+            cost: 0.00,
+            monthly_pricing: false
         }
     ]
     });
@@ -61,7 +62,8 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                     frequency: "",
                     nextDate: "",
                     service: "",
-                    cost: 0.00
+                    cost: 0.00,
+                    monthly_pricing: false
                 }
             ]
         });
@@ -82,7 +84,7 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
         }));
     };
     
-    const handlePropertyChange = (index: number, field: keyof Schedule, value: string | number) => {
+    const handlePropertyChange = (index: number, field: keyof Schedule, value: string | number | boolean) => {
       setClientData((prev) => {
         const updatedProperties = [...prev.schedules];
         updatedProperties[index] = {
@@ -128,7 +130,8 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                             frequency: "",
                             nextDate: "",
                             service: "",
-                            cost: 0.00
+                            cost: 0.00,
+                            monthly_pricing: false
                         }
                     ]
                 });
@@ -261,6 +264,16 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                                         />
                                     </div>
                                 </div>
+                                <div className="form-group checkbox-group">
+                                    <label className="checkbox-label">
+                                        <input 
+                                        type="checkbox" 
+                                        checked={prop.monthly_pricing || false}
+                                        onChange={(e) => handlePropertyChange(index, "monthly_pricing", e.target.checked)}
+                                        />
+                                        <span className="checkbox-text"> Set Monthly<br />Billing?</span>
+                                    </label>
+                                </div>
                             </div>
                             
                             <div className="form-row">
@@ -268,9 +281,7 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                                     <input
                                         placeholder='Start Date'
                                         className='date-input' 
-                                        type="text"
-                                        onFocus={(e) => e.target.type = 'date'}
-                                        onBlur={(e) => e.target.type = 'text'}
+                                        type="date"
                                         value={prop.nextDate}
                                         name='nextDate'
                                         onChange={(e) => handlePropertyChange(index, "nextDate", e.target.value)}
@@ -290,7 +301,9 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                                         </option>
                                         <option value="Once">Once</option>
                                         <option value="Weekly">Weekly</option>
-                                        <option value="BiWeekly">Every 2 Weeks</option>
+                                        <option value="Biweekly">Every 2 Weeks</option>
+                                        <option value="Triweekly">Every 3 Weeks</option>
+                                        <option value="Monthly">Monthly</option>
                                     </select>
                                 </div>
                             </div>

@@ -132,12 +132,12 @@ const ScheduleManagement: React.FC = () => {
   
   return (
     <div className="jo-container">
-      <div className="jo-content-wrapper">
-        <div className="back-button">
+      <div className="return-button-container">
           <button className="return-button" onClick={() => window.history.back()}>
               <i className="fa-solid fa-arrow-left"></i> Back
           </button>
-        </div>
+      </div>
+      <div className="jo-content-wrapper">
         <header className="jo-header">
           <h1 className="jo-title">Schedule Management</h1>
           <p className="jo-subtitle">Set the order jobs will appear in Daily Mode</p>

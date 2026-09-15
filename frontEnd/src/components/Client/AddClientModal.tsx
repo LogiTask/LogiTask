@@ -33,6 +33,7 @@ const AddClientModal: React.FC<AddClientModelProps> = ({ isOpen, onClose }) => {
             nextDate: "",
             service: "",
             cost: 0.00,
+            monthly_pricing: false
           },
         ],
       },
@@ -97,7 +98,7 @@ const AddClientModal: React.FC<AddClientModelProps> = ({ isOpen, onClose }) => {
     updateSchedule(propertyIndex, scheduleIndex, "cost", parseFloat(validValue) || 0);
   };
 
-  const updateSchedule = (propertyIndex: number, scheduleIndex: number, field: keyof Schedule, value: string | number) => {
+  const updateSchedule = (propertyIndex: number, scheduleIndex: number, field: keyof Schedule, value: string | number | boolean) => {
     setClientData((prev) => {
       const updatedProperties = [...prev.properties];
       const updatedSchedules = [...updatedProperties[propertyIndex].schedules];
@@ -167,6 +168,7 @@ const AddClientModal: React.FC<AddClientModelProps> = ({ isOpen, onClose }) => {
               nextDate: "",
               service: "",
               cost: 0.00,
+              monthly_pricing: false,
             },
           ],
         },
@@ -186,7 +188,7 @@ const AddClientModal: React.FC<AddClientModelProps> = ({ isOpen, onClose }) => {
   };
 
    
-  const getJobsNames = async () =>{ // TODO use react query for this to avoid multiple calls when just opening modal, it should be called once and then cached for reuse, since its just a list of jobs the user has made before.
+  const getJobsNames = async () =>{ // TODO use react query for this to avoid multiple calls when just opening modal, it should be called once and then cached for reuse, since its just a list of jobs the user has made before.xx
     try {
       const jobList = await api.get("/api/job-names/", {
         headers: {
@@ -422,15 +424,23 @@ const isClientFormComplete = useMemo(() => {
                     />
                   </div>
                 </div>
+                <div className="form-group checkbox-group">
+                  <label className="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      checked={prop.schedules[0].monthly_pricing || false}
+                      onChange={(e) => updateSchedule(index, 0, "monthly_pricing", e.target.checked)}
+                    />
+                    <span className="checkbox-text"> Set Monthly<br />Billing?</span>
+                  </label>
+                </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <input 
                     placeholder='Start Date'
                     className='date-input' 
-                    type="text"
-                    onFocus={(e) => e.target.type = 'date'}
-                    onBlur={(e) => e.target.type = 'text'}
+                    type="date"
                     name='nextDate'
                     onChange={(e)=> updateSchedule(index,0,"nextDate",e.target.value)}
                     required
@@ -446,7 +456,9 @@ const isClientFormComplete = useMemo(() => {
                     <option value="" disabled>How Often?</option>
                     <option value="Once">One Time</option>
                     <option value="Weekly">Weekly</option>
-                    <option value="BiWeekly">Every 2 Weeks</option>
+                    <option value="Biweekly">Every 2 Weeks</option>
+                    <option value="Triweekly">Every 3 Weeks</option>
+                    <option value="Monthly">Monthly</option>
                   </select>
                 </div>
               </div>

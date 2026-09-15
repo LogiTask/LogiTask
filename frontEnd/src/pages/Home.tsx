@@ -7,6 +7,7 @@ import BottomBar from '../components/Layout/BottomBar';
 import AddClientModal from '../components/Client/AddClientModal';
 import DailyReschedule from '../components/Daily/DailyReschedule';
 import DailyStatsModal from '../components/Daily/DailyStatsModal';
+import NoteSection from '../components/Notes/NoteSection';
 import { ClientDataID, Job } from '../types/interfaces';
 import { updateClientInCaches } from '../utils/cacheUpdates';
 import api from "../api"
@@ -67,36 +68,52 @@ const Home: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isDraggingDisabled, setIsDraggingDisabled] = useState(false);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const jobsRef = useRef<Job[]>(jobs);
+  useEffect(() => {
+    jobsRef.current = jobs;
+  }, [jobs]);
 
-  const handleClientUpdated = (updatedClient: ClientDataID) => {
+  const handleClientUpdated = useCallback((updatedClient: ClientDataID) => {
     updateClientInCaches(queryClient, updatedClient);
-};
+  }, [queryClient]);
 
   // Handle job completion toggle
   const handleJobComplete = useCallback(async (jobId: number) => {
     try {
-      const job = jobs.find(job => job.id === jobId);
+      const job = jobsRef.current.find(job => job.id === jobId);
+
       if (!job) return;
+
       const newStatus = job.status === 'complete' ? 'uncomplete' : 'complete';
-      const dateTime = job.status === 'complete' ? null : getUTCISOString();
+      const dateTime = newStatus === 'complete' ? getUTCISOString() : null;
 
-      queryClient.setQueryData(['todaysJobs'], (oldJobs: Job[] | undefined) => {
-        if (!oldJobs) return [];
-        return oldJobs.map(job => 
-          job.id === jobId ? { ...job, status: newStatus } : job
-        );
+      const response = await api.patch(`/api/Update-Schedule/${jobId}/`, {
+        status: newStatus, complete_date:dateTime
       });
 
-      if (selectedJob?.id === jobId) {
-        setSelectedJob({ ...selectedJob, status: newStatus });
+      // Only update job cache if the request was successful
+      if (response.status === 200) {
+        console.log('Job status updated successfully with dateTime:', dateTime, " for job ID:", jobId);
+        
+        queryClient.setQueryData(['todaysJobs'], (oldJobs: Job[] | undefined) => {
+          if (!oldJobs) return [];
+          return oldJobs.map(job => 
+            job.id === jobId ? { ...job, status: newStatus } : job
+          );
+        });
+        
+        setSelectedJob(prev => {
+          if (!prev || prev.id !== jobId) {
+            return prev;
+          }
+          return { ...prev, status: newStatus };
+        });
       }
-      await api.patch(`/api/Update-Schedule/${jobId}/`, { 
-        status: newStatus, complete_date:dateTime 
-      });
     } catch (error) {
       console.error('Error toggling job completion:', error);
-    } 
-  }, [jobs, queryClient, selectedJob]);
+    }
+  }, [queryClient]);
 
   // Event Handlers
   const handleModeClick = useCallback(async () => {
@@ -118,12 +135,22 @@ const Home: React.FC = () => {
     setSearchTerm(e.target.value);
   }, []);
 
+  const noop = useCallback(() => {}, []);
+
   const handleSortChange = useCallback((option: string) => {
     setSortOption(option);
   }, []);
 
   const handleStatsToggle = useCallback(() => {
     setShowDailyStats(prev => !prev);
+  }, []);
+
+  const openAddClientModal = useCallback(() => {
+    setIsAddClientModalOpen(true);
+  }, []);
+
+  const closeAddClientModal = useCallback(() => {
+    setIsAddClientModalOpen(false);
   }, []);
 
   // Memoized filtering and sorting functions
@@ -272,11 +299,11 @@ const Home: React.FC = () => {
     sessionStorage.setItem('lastFocusedClientId', id.toString());
   }, []);
 
-  const handleJobClick = useCallback((id: number, job: Job) => {
+  const handleJobClick = useCallback((id: number) => {
     setFocusedItemId(id);
-    setSelectedJob(job);
+    setSelectedJob(jobs.find(job => job.id === id) || null);
     sessionStorage.setItem('lastFocusedJobId', id.toString());
-  }, []);
+  }, [jobs]);
 
   // Handle property modal state changes
   const handlePropertyModalStateChange = useCallback((isOpen: boolean) => {
@@ -320,7 +347,8 @@ const Home: React.FC = () => {
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveJobId(null);
-
+    setIsDragging(false);
+    
     if (!over) return;
     if (active.id === over.id) {
       console.log('Dropped on itself, no action taken');
@@ -385,6 +413,7 @@ const Home: React.FC = () => {
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     setActiveJobId(active.id as number)
+    setIsDragging(true);
   }, []);
 
   const toggleDraggingEnabled = useCallback((isDisabled: boolean) => {
@@ -421,6 +450,8 @@ const Home: React.FC = () => {
             value={searchTerm}
             onChange={handleChange}
             placeholder={modeType === 'Client' ? "Search clients..." : "Search jobs..."}
+            spellCheck={false}
+            inputMode='text'
           />
       </div>
     
@@ -440,17 +471,13 @@ const Home: React.FC = () => {
               <ClientListItem
                 client={client}
                 isFocused={focusedItemId === client.id}
-                onClick={() => handleClientClick(client.id)}
+                onClick={handleClientClick}
                 renderStars={renderStars}
                 onClientUpdated={handleClientUpdated}
               />
               
               <ClientProperties 
-                client={{
-                  ...client,
-                  phoneNumber: client.phoneNumber || '',
-                  properties: client.properties || []
-                }} 
+                client={client} 
                 visible={focusedItemId === client.id}
                 onPropertyModalStateChange={handlePropertyModalStateChange}
               />
@@ -470,60 +497,64 @@ const Home: React.FC = () => {
                   <p>{searchTerm ? "Try different search terms" : "Your schedule is clear for now"}</p>
                 </div>
             ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={pointerWithin}
-                onDragEnd={handleDragEnd}
-                onDragStart={handleDragStart}
-                modifiers={[restrictWithinWindow]}
-              >
-
-                <SortableContext
-                  items={filteredJobs.map(job => job.id)}
-                  strategy={verticalListSortingStrategy}
+              <>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={pointerWithin}
+                  onDragEnd={handleDragEnd}
+                  onDragStart={handleDragStart}
+                  modifiers={[restrictWithinWindow]}
                 >
-                    {filteredJobs.map((job: Job) => (
+
+                  <SortableContext
+                    items={filteredJobs.map(job => job.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                      {filteredJobs.map((job: Job) => (
+                        <div 
+                          key={job.id}
+                          className="job-wrapper"
+                          data-job-id={job.id}
+                        >
+                          <SortableDailyList
+                            job={job}
+                            isFocused={focusedItemId === job.id}
+                            onClick={handleJobClick}
+                            onComplete={handleJobComplete}
+                            isDisabled={isDraggingDisabled}
+                            onModalToggle={toggleDraggingEnabled}
+                          />
+                        </div>
+                      ))}  
+                  </SortableContext>
+                  <DragOverlay dropAnimation={null} style={{zIndex: 5}}>
+                    {activeJob ? (
                       <div 
-                        key={job.id}
+                        key={activeJob.id}
                         className="job-wrapper"
-                        data-job-id={job.id}
+                        style={{ width: '100%'}}
                       >
                         <SortableDailyList
-                          job={job}
-                          isFocused={focusedItemId === job.id}
-                          onClick={(id) => {
-                            handleJobClick(id, job);
-                          }}
+                          job={activeJob}
+                          isFocused={focusedItemId === activeJob.id}
+                          onClick={noop}
                           onComplete={handleJobComplete}
-                          isDisabled={isDraggingDisabled}
+                          isDisabled={false}
+                          isDragging={true}
                           onModalToggle={toggleDraggingEnabled}
                         />
                       </div>
-                    ))}  
-                </SortableContext>
-                <DragOverlay dropAnimation={null} style={{zIndex: 5}}>
-                  {activeJob ? (
-                    <div 
-                      key={activeJob.id}
-                      className="job-wrapper"
-                      style={{ width: '100%'}}
-                    >
-                      <SortableDailyList
-                        job={activeJob}
-                        isFocused={focusedItemId === activeJob.id}
-                        onClick={() => {}}
-                        onComplete={handleJobComplete}
-                        isDisabled={false}
-                        isDragging={true}
-                        onModalToggle={toggleDraggingEnabled}
-                      />
-                    </div>
-                  ) : null}
-                </DragOverlay>
-                <DailyReschedule 
-                  isDragging={activeJobId !== null && jobs.find(job => job.id === activeJobId)?.status !== 'complete'} 
+                    ) : null}
+                  </DragOverlay>
+                  <DailyReschedule 
+                    isDragging={activeJobId !== null && jobs.find(job => job.id === activeJobId)?.status !== 'complete'} 
+                  />
+                </DndContext>
+                <NoteSection 
+                  selectedJob={selectedJob} 
+                  isDragging={isDragging}
                 />
-              </DndContext>
+              </>
             )}
           </>
         )}
@@ -532,7 +563,7 @@ const Home: React.FC = () => {
       <BottomBar
         isModeRotated={isModeRotated}
         handleModeClick={handleModeClick}
-        openAddClientModal={() => setIsAddClientModalOpen(true)}
+        openAddClientModal={openAddClientModal}
         onTeamModalOpen={handleTeamModalOpen}
         onStatsToggle={handleStatsToggle}
         modeType={modeType}
@@ -541,7 +572,7 @@ const Home: React.FC = () => {
             
       <AddClientModal
         isOpen={isAddClientModalOpen}
-        onClose={() => setIsAddClientModalOpen(false)}
+        onClose={closeAddClientModal}
       />
       <TeamModal
         isOpen={isTeamModalOpen}

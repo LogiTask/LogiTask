@@ -92,7 +92,8 @@
 @media (max-width: 768px) {
   .daily-stats-panel {
     right: 10px;
-    min-width: 180px;
+    bottom: 120px;
+    min-width: 38vw;
     padding: 12px;
   }
   

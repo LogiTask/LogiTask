@@ -1,10 +1,10 @@
 from django.shortcuts import render,get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework import generics, status
-from .serializers import ClientSerializer, userSerializer, PropertySerializer, ClientPropertySetUpSerializer, JobSerializer ,PropertyAndScheduleSetUp, ScheduleSerializer ,PaymentSerializer,CompanySerializer,ScheduleJobsSerializer,PropertyServiceInfoSerializer, BalanceSerializer,BalanceHistorySerializer,BalanceAdjustmentSerializer,UserProfileSerializer,JobInfoSerializer,JobOnlySerializer,ClientPropertiesSerializer,PaymentInfoSerializer,OnlyClientSerializer,ScheduleManagementSerializer
+from .serializers import ClientSerializer, userSerializer, PropertySerializer, ClientPropertySetUpSerializer, JobSerializer ,PropertyAndScheduleSetUp, ScheduleSerializer ,PaymentSerializer,CompanySerializer,ScheduleJobsSerializer,PropertyServiceInfoSerializer, BalanceSerializer,BalanceHistorySerializer,BalanceAdjustmentSerializer,UserProfileSerializer,JobInfoSerializer,JobOnlySerializer,ClientPropertiesSerializer,PaymentInfoSerializer,OnlyClientSerializer,ScheduleManagementSerializer,ScheduleNoteSerializer,JobNoteSerializer,PropertyNoteSerializer    
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Client, Property, Schedule, Job,Payment,Company,userProfile, Balance, BalanceHistory,BalanceAdjustment
-from rest_framework.generics import ListAPIView,UpdateAPIView
+from .models import Client, Property, Schedule, Job,Payment,Company,userProfile, Balance, BalanceHistory,BalanceAdjustment,NoteTemplate,ScheduleNote,PropertyNote,JobNote
+from rest_framework.generics import ListAPIView,UpdateAPIView, RetrieveUpdateDestroyAPIView
 from django.http import JsonResponse
 from django.utils.timezone import now
 from rest_framework.views import APIView
@@ -139,13 +139,22 @@ class UploadExcelView(APIView):
         try:
             df = pd.read_excel(file)  # Read Excel file
             for _, row in df.iterrows():
+                # handle optional fields that may be blank/NaN in the Excel file
+                last_name = row.get('lastName', None)
+                if pd.isna(last_name) or str(last_name).strip() == "":
+                    last_name = None
+
+                email = row.get('email', None)
+                if pd.isna(email) or str(email).strip() == "":
+                    email = None
+
                 client = Client.objects.create(
                     firstName=row['firstName'],
-                    lastName=row['lastName'],  # Change column names based on Excel file
-                    email=row['email'],
-                    phoneNumber=row['phoneNumber'],
+                    lastName=last_name,
+                    email=email,
+                    phoneNumber=row.get('phoneNumber', None),
                     author=self.request.user,
-                    company = self.request.user.userprofile.company
+                    company=self.request.user.userprofile.company
                 )
                 property_obj = Property.objects.create(
                     street=row['street'],
@@ -159,9 +168,10 @@ class UploadExcelView(APIView):
                     frequency=row['frequency'],
                     nextDate=row['nextDate'],
                     service=row['service'],
-                    cost=row['cost']
+                    cost=row['cost'],
+                    monthly_pricing=row["monthly_pricing"]
                 )
-
+            Schedule.generate_jobs()
 
             return JsonResponse({"message": "Clients uploaded successfully"}, status=201)
         except Exception as e:
@@ -523,10 +533,13 @@ class UpdateClient(UpdateAPIView):
     def partial_update(self, request, *args, **kwargs):
         data = request.data.copy()
 
+        
         nullable_fields = ['email', 'lastName']
 
         for field in nullable_fields:
-            if field in data and data[field].strip() == "":
+            if data[field] == None:
+                pass
+            elif field in data and data[field].strip() == "":
                 data[field] = None
         
         request._full_data = data
@@ -634,3 +647,90 @@ class update_Jobs_Order(UpdateAPIView):
             Job.objects.bulk_update(updated, ["order"])
 
         return Response({"status": "success"}, status=status.HTTP_200_OK)
+
+class ScheduleNoteListCreate(generics.ListCreateAPIView):
+    serializer_class = ScheduleNoteSerializer
+    permission_classes = [IsAuthenticated]
+
+    #retrive notes
+    def get_queryset(self):
+        schedule_id = self.kwargs.get("schedule_id")
+        return ScheduleNote.objects.filter(schedule_id=schedule_id)
+        
+    #creating note
+    def perform_create(self, serializer):
+        schedule_id = self.kwargs.get("schedule_id")
+        user=self.request.user
+        try:
+            schedule = Schedule.objects.get(id=schedule_id)
+            serializer.save(schedule=schedule, author=user)
+        except Schedule.DoesNotExist:
+            return Response ({'NO MATCHING SCHEDULE'}, status=status.HTTP_401_UNAUTHORIZED)
+class PropertyNoteListCreate(generics.ListCreateAPIView):
+    serializer_class = PropertyNoteSerializer
+    permission_classes = [IsAuthenticated]
+
+    #retrive notes
+    def get_queryset(self):
+        property_id = self.kwargs.get("property_id")
+        return PropertyNote.objects.filter(property_id=property_id)
+        
+    #creating note
+    def perform_create(self, serializer):
+        property_id = self.kwargs.get("property_id")
+        user=self.request.user
+        try:
+            property = Property.objects.get(id=property_id)
+            serializer.save(property=property, author=user)
+        except Schedule.DoesNotExist:
+            return Response ({'NO MATCHING PROPERTY'}, status=status.HTTP_401_UNAUTHORIZED)
+
+class JobNoteListCreate(generics.ListCreateAPIView):
+    serializer_class = JobNoteSerializer
+    permission_classes = [IsAuthenticated]
+
+    #retrive notes
+    def get_queryset(self):
+        job_id = self.kwargs.get("job_id")
+        return JobNote.objects.filter(job_id=job_id)
+        
+    #creating note
+    def perform_create(self, serializer):
+        job_id = self.kwargs.get("job_id")
+        user=self.request.user
+        try:
+            job = Job.objects.get(id=job_id)
+            serializer.save(job=job, author=user)
+        except Schedule.DoesNotExist:
+            return Response ({'NO MATCHING JOB'}, status=status.HTTP_401_UNAUTHORIZED)
+class GetScheduleNote(generics.RetrieveAPIView):
+    serializer_class = PropertyNoteSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = ScheduleNote.objects.all()
+
+class GetPropertyNote(generics.RetrieveAPIView):
+    serializer_class = PropertyNoteSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = PropertyNote.objects.all()
+
+class GetJobNote(generics.RetrieveAPIView):
+    serializer_class = PropertyNoteSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = JobNote.objects.all()
+
+
+class ScheduleNoteDetailView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = ScheduleNote.objects.all()
+    serializer_class = ScheduleNoteSerializer
+
+class PropertyNoteDetailView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = PropertyNote.objects.all()
+    serializer_class = PropertyNoteSerializer
+
+class JobNoteDetailView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = JobNote.objects.all()
+    serializer_class = JobNoteSerializer
+

@@ -15,6 +15,7 @@ interface schedule{
     nextDate:string;
     service:string;
     cost:number
+    monthly_pricing?:boolean;
 }
 
 const AddSchedule: React.FC<AddPropertyModalProps> = ({ 
@@ -27,7 +28,8 @@ const AddSchedule: React.FC<AddPropertyModalProps> = ({
             frequency: "",
             nextDate: "",
             service: "",
-            cost: 0.00
+            cost: 0.00,
+            monthly_pricing: false
     });
     const [jobList, setJobList] = useState<string[]>(["mow"]);
 
@@ -36,7 +38,8 @@ const AddSchedule: React.FC<AddPropertyModalProps> = ({
             frequency: "",
             nextDate: "",
             service: "",
-            cost: 0.00
+            cost: 0.00,
+            monthly_pricing: false
         });
         onClose();
     }
@@ -47,10 +50,12 @@ const AddSchedule: React.FC<AddPropertyModalProps> = ({
     }, [clientData]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-            const { name, value } = e.target;
+            const { name, value, type } = e.target;
+            const inputValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+            
             setClientData((prevData) => ({
               ...prevData,
-              [name]: value,
+              [name]: inputValue,
             }));
         };
     
@@ -83,10 +88,10 @@ const AddSchedule: React.FC<AddPropertyModalProps> = ({
                         frequency: "",
                         nextDate: "",
                         service: "",
-                        cost: 0.00
-                        }
-                );
-                
+                        cost: 0.00,
+                        monthly_pricing: false
+                });
+
                 onClose(propertyResponse.data);
                 
             } else {
@@ -166,6 +171,17 @@ const AddSchedule: React.FC<AddPropertyModalProps> = ({
                                     />
                                 </div>
                             </div>
+                            <div className="form-group checkbox-group">
+                                <label className="checkbox-label">
+                                    <input
+                                        type="checkbox"
+                                        name="monthly_pricing"
+                                        checked={clientData.monthly_pricing || false}
+                                        onChange={handleInputChange}
+                                    />
+                                    <span className="checkbox-text">Monthly<br />Pricing?</span>
+                                </label>
+                            </div>
                         </div>
                         
                         <div className="form-row">
@@ -173,9 +189,7 @@ const AddSchedule: React.FC<AddPropertyModalProps> = ({
                                 <input 
                                     placeholder='Start Date'
                                     className='date-input' 
-                                    type="text"
-                                    onFocus={(e) => e.target.type = 'date'}
-                                    onBlur={(e) => e.target.type = 'text'}
+                                    type="date"
                                     name="nextDate"
                                     value={clientData.nextDate}
                                     onChange={(e) => handleInputChange(e)}
@@ -195,7 +209,9 @@ const AddSchedule: React.FC<AddPropertyModalProps> = ({
                                     </option>
                                     <option value="Once">Once</option>
                                     <option value="Weekly">Weekly</option>
-                                    <option value="BiWeekly">Every 2 Weeks</option>
+                                    <option value="Biweekly">Every 2 Weeks</option>
+                                    <option value="Triweekly">Every 3 Weeks</option>
+                                    <option value="Monthly">Monthly</option>
                                 </select>
                             </div>
                         </div>

@@ -3,7 +3,7 @@
   background: rgba(92, 90, 90, 0.323);
   backdrop-filter: blur(25px);
   color: #f2f1f0;
-  padding: clamp(8px, 2vw, 10px) clamp(15px, 4vw, 20px);
+  padding: 10px 0px 10px 15px;
   margin: 5px 0;
   border-radius: 10px 0 0 10px;
   cursor: pointer;
@@ -12,7 +12,7 @@
   user-select: none;
   flex-direction: column;
   border-left: 3px solid rgba(70, 130, 220, 0.4);
-  transition: all 0.2s ease-out;
+  transition: background 0.5s, transform 0.2s, border-left-color 0.3s;
 }
 
 .list-item:hover {
@@ -26,7 +26,6 @@
   backdrop-filter: blur(25px);
   color: white;
   border-left: 6px solid rgba(70, 130, 220, 0.8);
-  transform: scale(1.02);
 }
 /* Profile Pic and stars specific to ClientListItem */
 .profile-pic-container {
@@ -63,6 +62,8 @@
   display: flex;
   gap: .45em;
   align-items: center;
+  position: fixed;
+  right: 10px;
 }
 
 /* Payment button and Gear button */

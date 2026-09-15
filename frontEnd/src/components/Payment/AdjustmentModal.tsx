@@ -8,9 +8,10 @@ interface AdjustmentModalProps {
     isOpen: boolean;
     client?: ClientDataID;
     onClose: () => void;
+    onAdjustmentSuccess?: () => void;
 }
 
-const AdjustmentModal: React.FC<AdjustmentModalProps> = ({ client, onClose, isOpen }) => {
+const AdjustmentModal: React.FC<AdjustmentModalProps> = ({ client, onClose, isOpen, onAdjustmentSuccess }) => {
     const [adjustmentMethod, setAdjustmentMethod] = useState('');
     const [value, setValue] = useState('');
     const [notes, setNotes] = useState('');
@@ -36,6 +37,7 @@ const AdjustmentModal: React.FC<AdjustmentModalProps> = ({ client, onClose, isOp
                 'Content-Type': 'application/json'
             }});
             if (adjustmentResponse.status === 201) {
+                onAdjustmentSuccess?.()
                 alert("Adjustment received")
             }
         }catch (err) {
@@ -114,7 +116,7 @@ const AdjustmentModal: React.FC<AdjustmentModalProps> = ({ client, onClose, isOp
                         <div className="payment-client-info">
                             <i className="fa-solid fa-user"></i>
                             <span>
-                            {client ? `${client.firstName} ${client.lastName}` : 'Client'}
+                                {client ? `${client.firstName} ${client.lastName ?? ""}` : "No client selected"}
                             </span>
                         </div>
                     </div>

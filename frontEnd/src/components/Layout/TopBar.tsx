@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useState }from 'react'
+import NoteSelectionModal from '../Notes/NoteSelectionModal';
+import { PropertyNote, ScheduleNote } from '../../types/noteTypes';
+import NoteFormModal from '../Notes/NoteFormModal';
 import { ClientDataID, Job } from '../../types/interfaces';
 import '../../styles/components/TopBar.css';
 import { formatCapitalized, formatPhoneNumber } from '../../utils/format';
@@ -6,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from '@tanstack/react-query';
 import api from '../../api';
 import { useUser } from '../../contexts/userContext.tsx';
+import { toGoogleMapsLink } from '../../utils/googleMapsLink';
 
 interface TopBarProps {
   focusedItemId: number | null;
@@ -27,6 +31,34 @@ const TopBar: React.FC<TopBarProps> = ({
   const user = useUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+
+  const [noteFormData, setNoteFormData] = useState<{
+    type: "property" | "schedule" | null;
+    id?: number;
+    note?: PropertyNote | ScheduleNote;
+  }>({ type: null });
+
+  const handleSelectNoteType = (noteType: "property" | "schedule") => {
+    if (!selectedJob) return;
+
+    if (noteType === "property") {
+      setNoteFormData({
+        type: "property",
+        id: selectedJob.property.id,
+        note: selectedJob.property.propertynote,
+      });
+    } else {
+      setNoteFormData({
+        type: "schedule",
+        id: selectedJob.schedule.id,
+        note: selectedJob.schedule.schedulenote,
+      });
+    }
+
+    setIsNoteModalOpen(false);
+  };
 
   const handleClientClick = async () => {
   
@@ -73,12 +105,12 @@ const TopBar: React.FC<TopBarProps> = ({
             </div>
               <div className="client-item">
                 <i className="fa-solid fa-phone" />
-                <span>{formatPhoneNumber(selectedClient.phoneNumber)}</span>
+                <span><a href={`tel:${formatPhoneNumber(selectedClient.phoneNumber)}`}>{formatPhoneNumber(selectedClient.phoneNumber)}</a></span>
               </div>
               <div className="client-item">
                 <i className="fa-solid fa-envelope"></i>
                   {selectedClient.email ? (
-                    <span>{selectedClient.email}</span>
+                    <span><a href={`mailto:${selectedClient.email}`}>{selectedClient.email}</a></span>
                    ) : ( 
                     <span className="noEmail">No email provided</span>
                    )} 
@@ -89,7 +121,9 @@ const TopBar: React.FC<TopBarProps> = ({
             <div className="property">
               <div className="address service-item">
                 <i className="fa-solid fa-location-dot" />
+                <a href={toGoogleMapsLink(`${selectedJob.property.street}, ${selectedJob.property.city}, ${selectedJob.property.state} ${selectedJob.property.zipCode}`)} target="_blank" rel="noopener noreferrer">
                 {selectedJob.property.street}, {selectedJob.property.city}, {selectedJob.property.state} {selectedJob.property.zipCode}
+                </a>
               </div>
             </div>
             <div className="contact">
@@ -99,7 +133,7 @@ const TopBar: React.FC<TopBarProps> = ({
               </div>
               <div className="phone service-item">
                 <i className="fa-solid fa-phone" />
-                <span>{formatPhoneNumber(selectedJob.client.phoneNumber)}</span>
+                <span><a href={`tel:${formatPhoneNumber(selectedJob.client.phoneNumber)}`}>{formatPhoneNumber(selectedJob.client.phoneNumber)}</a></span>
               </div>
             </div>
             <div className="service-tags">
@@ -115,6 +149,10 @@ const TopBar: React.FC<TopBarProps> = ({
                 <i className="fa-solid fa-dollar-sign" />
                 {Math.floor(selectedJob.cost)}
               </div>
+              <div className="note-pill service-item pill-container" onClick={() => setIsNoteModalOpen(true)}>
+                <i className="fa-solid fa-sticky-note" />
+                +
+              </div>
             </div>
           </div>
         ) : null}
@@ -128,6 +166,20 @@ const TopBar: React.FC<TopBarProps> = ({
           <button onClick={() => handleSortChange('phoneNumber')}>Phone Number</button>
         </div>
       </div>
+      <NoteSelectionModal
+        isOpen={isNoteModalOpen}
+        onClose={() => setIsNoteModalOpen(false)}
+        onSelectNoteType={handleSelectNoteType}
+      />
+
+      <NoteFormModal
+        isOpen={!!noteFormData.type}
+        onClose={() => setNoteFormData({ type: null })}
+        noteType={noteFormData.type as "property" | "schedule"}
+        targetId={noteFormData.id!}
+        existingNote={noteFormData.note}
+      />
+
     </div>
   );
 };

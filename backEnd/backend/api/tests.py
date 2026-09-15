@@ -1,6 +1,6 @@
 from django.test import TestCase, RequestFactory
 from rest_framework.exceptions import ValidationError
-from .models import Client, Property, Schedule,Job
+from .models import Client, Property, Schedule, Job, Company, userProfile
 from .serializers import ClientPropertySetUpSerializer
 from django.contrib.auth.models import User
 from django.utils.timezone import now
@@ -11,12 +11,15 @@ class ScheduleJobGenerationTest(TestCase):
     def setUp(self):
         """Set up test data before each test"""
         self.user = User.objects.create_user(username="testuser", password="testpass")
+        self.company = Company.objects.create(companyName="Test company", user=self.user)
+        userProfile.objects.create(user=self.user, company=self.company, timezone="UTC")
         self.client = Client.objects.create(
             firstName="John",
             lastName="Doe",
             phoneNumber="1234567890",
             email="john@example.com",
-            author =  self.user
+            author=self.user,
+            company=self.company,
             )
         
 

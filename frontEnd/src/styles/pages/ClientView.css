@@ -1,5 +1,9 @@
+html, body {
+  background-color: rgba(40, 40, 43, 1); 
+}
+
 .client-view-container {
-    display: flex;
+    display: fixed;
     flex-direction: column;
     gap: 20px;
     padding: 30px 50px 100px;
@@ -7,8 +11,11 @@
     color: white;
     height: 100vh;
     overflow-y: auto;
+    overflow-x: hidden;
     font-family: 'Outfit', sans-serif;
     user-select: none;
+    touch-action: pan-y; 
+    -webkit-overflow-scrolling: touch; 
 }
 
 .client-info-card, .client-balance-card {
@@ -21,6 +28,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 20px;
     align-items: center;
+    margin-bottom: 20px;
 }
 
 .client-info-card, .client-balance-card {
@@ -83,6 +91,16 @@
     align-items: center;
     gap: 20px;
     color: #e0e0e0;
+}
+
+.contact-item a {
+    font-size: clamp(0.85rem, 1vw + 0.5rem, 1rem);
+    color: #b0b0b0;
+}
+
+.contact-item a:hover {
+    color: #d4d4d4;
+    text-decoration: underline;
 }
 
 .client-settings-button {
@@ -192,7 +210,8 @@
 /* Details Section - Addresses, Services, Payments */
 .client-details-section {
     display: grid;
-    grid-template-columns: 0.75fr 2.75fr 1.5fr;
+    grid-template-columns: 0.6fr 2.2fr 1.5fr;
+    grid-template-rows: auto;
     gap: 20px;
 }
 
@@ -203,6 +222,19 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     font-size: clamp(0.8rem, 1vw + 1rem, 1rem);
 }
+
+.adjustments-panel {
+    grid-column: 3;
+    grid-row: 3;
+}
+.payments-panel {
+    grid-column: 3;
+}
+
+.date-column {
+    min-width: 100px; 
+}
+
 .panel-header {
     padding-bottom: 10px;
     margin-top: 0;
@@ -262,7 +294,7 @@
     color: #fdfdfd;
 }
 
-.unapplied-job, .unapplied-payment {
+.unapplied-job, .unapplied-payment, .unapplied-adjustment {
     border-left: 1px solid #f5c720;
 }
 
@@ -287,15 +319,42 @@
 
 /* Responsive adjustments */
 @media (max-width: 992px) {
+
+    .client-view-container {
+        padding: 20px 15px 200px;
+    }
+    
     .client-header-section,
     .client-details-section {
         grid-template-columns: 1fr;
+    }
+    .contact-item {
+        justify-content: center; 
+    }
+
+    .contact-item span {
+        text-align: center;
+    }
+
+    .payments-panel {
+        grid-column: 1;
+        grid-row: 3;
+    }
+
+    .adjustments-panel {
+        grid-column: 1;
+        grid-row: 4;
     }
     
     .client-info-card {
         flex-direction: column;
         text-align: center;
         align-items: center;
+    }
+
+    .client-avatar {
+        margin: 0 auto; 
+        align-self: center; 
     }
 
     .client-avatar-and-details {
@@ -311,8 +370,8 @@
 
     .client-settings-button {
         position: absolute;
-        top: 50px;
-        right: 50px;
+        top: 25px;
+        right: 25px;
         width: 40px;
         height: 40px;
         font-size: 1.2rem;
@@ -321,9 +380,7 @@
 }
 
 @media (max-width: 460px) {
-    .client-view-container {
-        padding: 20px 15px 10px;
-    }
+    
     .client-info-card, .client-balance-card, .client-panel {
         min-width: calc(100vw - 30px);
     }

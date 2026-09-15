@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import DailyListItem from './DailyListItem';
@@ -16,7 +16,7 @@ interface SortableDailyListItemProps {
   onModalToggle?: (isOpen: boolean) => void;
 }
 
-const SortableDailyListItem: React.FC<SortableDailyListItemProps> = ({
+const SortableDailyListItemComponent: React.FC<SortableDailyListItemProps> = ({
   job,
   isFocused,
   onClick,
@@ -168,4 +168,6 @@ const SortableDailyListItem: React.FC<SortableDailyListItemProps> = ({
   );
 };
 
-export default SortableDailyListItem;
+const SortableListItem = memo(SortableDailyListItemComponent);
+
+export default SortableListItem;

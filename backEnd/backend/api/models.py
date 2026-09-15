@@ -109,7 +109,7 @@ class Schedule(models.Model):
     isActive = models.BooleanField(default=True)
     schedule_day = models.CharField(max_length=9,choices=WEEKDAY_CHOICES, default=MONDAY)
     order = models.PositiveIntegerField(default=999, db_index=True) # Default to a high number to push unsorted items to the end
-    
+    monthly_pricing = models.BooleanField(default=False)
     class Meta:
         ordering = ["schedule_day", "order"]  
 
@@ -143,6 +143,8 @@ class Schedule(models.Model):
             ).order_by("order")
            
             for schedule in schedules:
+                if schedule.monthly_pricing:
+                    schedule.cost=0
                 Job.objects.create(
                     schedule=schedule,
                     cost=schedule.cost,
@@ -160,6 +162,10 @@ class Schedule(models.Model):
                         schedule.nextDate += timedelta(weeks=1)
                     elif schedule.frequency.lower() == "biweekly":
                         schedule.nextDate += timedelta(weeks=2)
+                    elif schedule.frequency.lower() == "triweekly":
+                        schedule.nextDate += timedelta(weeks=3)
+                    elif schedule.frequency.lower() == "monthly":
+                        schedule.nextDate += timedelta(weeks=4)
                     elif schedule.frequency.lower() == "once":
                         schedule.isActive = False
                         schedule.endDate = today_in_user_tz
@@ -205,10 +211,11 @@ class Balance(models.Model):
 
     def recalculate_balance(self):
         with transaction.atomic():
-            unapplied_jobs = Job.objects.filter(client=self.client, is_applied_to_balance=False, status='complete')
+            unapplied_jobs = Job.objects.filter(client=self.client, is_applied_to_balance=False, status='complete', schedule__monthly_pricing = False)
             unapplied_payments = Payment.objects.filter(client=self.client, is_applied_to_balance=False)
             unapplied_adjustments = BalanceAdjustment.objects.filter(client=self.client, is_applied_to_balance=False)
             
+           
             total_jobs = unapplied_jobs.aggregate(Sum("cost"))["cost__sum"] or 0
             total_payments = unapplied_payments.aggregate(Sum("amount"))["amount__sum"] or 0
             total_adjustments = unapplied_adjustments.aggregate(Sum("amount"))["amount__sum"] or 0
@@ -217,8 +224,11 @@ class Balance(models.Model):
             total_payments = Decimal(total_payments)
             total_adjustments= Decimal(total_adjustments)
             
-            delta = total_payments - total_jobs + total_adjustments
+            
+            delta = total_payments - total_jobs + total_adjustments 
 
+            unapplied_jobs = Job.objects.filter(client=self.client, is_applied_to_balance=False, status='complete', schedule__monthly_pricing = True)
+             
             self.current_balance += delta
 
             # Save current balance
@@ -255,7 +265,7 @@ class Balance(models.Model):
         unapplied_jobs = Job.objects.filter(client=self.client, is_applied_to_balance=False, status='complete')
         unapplied_payments = Payment.objects.filter(client=self.client, is_applied_to_balance=False)
         unapplied_adjustments = BalanceAdjustment.objects.filter(client=self.client, is_applied_to_balance=False)
-
+            
         total_jobs = unapplied_jobs.aggregate(Sum("cost"))["cost__sum"] or 0
         total_payments = unapplied_payments.aggregate(Sum("amount"))["amount__sum"] or 0
         total_adjustments = unapplied_adjustments.aggregate(Sum("amount"))["amount__sum"] or 0
@@ -263,7 +273,7 @@ class Balance(models.Model):
         total_jobs = Decimal(total_jobs)
         total_payments = Decimal(total_payments)
         total_adjustments= Decimal(total_adjustments)
-
+            
         delta = total_payments - total_jobs + total_adjustments
 
         return self.current_balance + delta
@@ -297,7 +307,8 @@ class BalanceHistory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     service_month = models.PositiveSmallIntegerField(null=True,blank=True)
     service_year = models.PositiveSmallIntegerField(null=True,blank=True)
-
+    
+    
     # Store related job/payment IDs for traceability
     jobs = models.ManyToManyField("Job")
     payments = models.ManyToManyField("Payment")
@@ -305,3 +316,21 @@ class BalanceHistory(models.Model):
 
     def __str__(self):
         return f"Change of {self.delta} on {self.created_at.date()}"
+    
+class NoteTemplate(models.Model):
+    title = models.CharField(max_length=100,null=True,blank=True)
+    content = models.TextField(max_length=100,null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    last_modified = models.DateTimeField(auto_now=True)
+    class Meta:
+        abstract = True
+
+class ScheduleNote(NoteTemplate):
+    schedule = models.OneToOneField(Schedule, on_delete=models.CASCADE)
+
+class PropertyNote(NoteTemplate):
+    property = models.OneToOneField(Property, on_delete=models.CASCADE)
+
+class JobNote(NoteTemplate):
+    job = models.OneToOneField(Job, on_delete=models.CASCADE)

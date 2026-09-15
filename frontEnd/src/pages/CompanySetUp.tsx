@@ -168,4 +168,4 @@ const CompanySetUp: React.FC = () => {
     );
 };
 
-export { CompanySetUp };
+export default CompanySetUp;
